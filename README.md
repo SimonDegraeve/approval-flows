@@ -1,5 +1,9 @@
 # Approval flows - Senior Frontend Remote Case Study
 
+## Documentation
+
+[See documentation](./docs/index.md)
+
 ## Installation
 
 ```sh
