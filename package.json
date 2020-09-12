@@ -1,0 +1,33 @@
+{
+  "name": "approval-flows",
+  "version": "0.0.1",
+  "scripts": {
+    "build": "parcel build index.html",
+    "serve": "cd dist && python -m SimpleHTTPServer 1234",
+    "test": "bsb -make-world -clean-world && jest",
+    "res:build": "bsb -make-world -clean-world",
+    "res:watch": "bsb -make-world -clean-world -w",
+    "dev": "bsb -make-world -clean-world && parcel index.html --port 1234"
+  },
+  "jest": {
+    "transformIgnorePatterns": [
+      "/node_modules/(?!@glennsl/bs-jest|bs-platform).+\\.js$"
+    ]
+  },
+  "author": "Simon Degraeve",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
+    "reason-react": ">=0.9.1"
+  },
+  "devDependencies": {
+    "@glennsl/bs-jest": "^0.5.1",
+    "bs-jest-dom": "^4.1.1",
+    "bs-platform": "8.2.0",
+    "bs-react-testing-library": "^0.7.3",
+    "jest": "^26.4.2",
+    "parcel-bundler": "^1.12.4",
+    "tailwindcss": "^1.8.8"
+  }
+}
