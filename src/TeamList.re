@@ -141,7 +141,7 @@ module TeamListItem = {
   };
 };
 
-// Dumb component: data agnostic
+// Dumb component: api agnostic
 module TeamList = {
   type team = {
     id: teamId,
@@ -220,6 +220,7 @@ let make = () => {
   | (Some(teams), Some(users), Some(approvalFlows), _) =>
     <TeamList
       teams={
+        // Normalize data
         teams->Belt.Array.map(({id, name, userIds}) =>
           (
             {

@@ -329,7 +329,7 @@ describe("As an Admin", () => {
 
       result
       |> getAllByRole(~matcher=`Str("button"), _)
-      |> Array.get(_, 1)
+      |> Array.get(_, 1)  // Button Edit
       |> FireEvent.click(_)
       |> ignore;
 
@@ -359,7 +359,7 @@ describe("As an Admin", () => {
 
       result
       |> getAllByRole(~matcher=`Str("button"), _)
-      |> Array.get(_, 1)
+      |> Array.get(_, 1)  // Button Edit
       |> FireEvent.click(_)
       |> ignore;
 
@@ -370,6 +370,70 @@ describe("As an Admin", () => {
            |> expect
            |> toHaveValue(`Str("USR2"), _)
            |> Js.Promise.resolve
+         );
+    });
+
+    test("updates threshold in an approval flow", () => {
+      let mockFn = JestJs.fn(_ => ());
+      let fn = MockJs.fn(mockFn);
+
+      let result =
+        <TeamApprovalFlow
+          teamName="test"
+          users
+          thresholds={teamsWithApprovers[0].thresholds}
+          onChange=fn
+          onClose={() => ()}
+        />
+        |> render(_);
+
+      result
+      |> getAllByRole(~matcher=`Str("button"), _)
+      |> Array.get(_, 1)  // Button Edit
+      |> FireEvent.click(_)
+      |> ignore;
+
+      result
+      |> getByLabelText(~matcher=`Str("From"), _)
+      |> FireEvent.change(~eventInit={
+                            "target": {
+                              "value": "5000",
+                            },
+                          })
+      |> ignore;
+
+      result
+      |> getByLabelText(~matcher=`Str("To"), _)
+      |> FireEvent.change(~eventInit={
+                            "target": {
+                              "value": "5500",
+                            },
+                          })
+      |> ignore;
+
+      result
+      |> getByLabelText(~matcher=`Str("User"), _)
+      |> FireEvent.change(~eventInit={
+                            "target": {
+                              "value": "USR4",
+                            },
+                          })
+      |> ignore;
+
+      result
+      |> getByText(~matcher=`Str("Confirm"), _)
+      |> FireEvent.click(_)
+      |> ignore;
+
+      mockFn
+      |> MockJs.calls
+      |> Belt.Array.get(_, 0)
+      |> Belt.Option.getWithDefault(_, [||])
+      |> Belt.Array.get(_, 0)
+      |> Expect.expect
+      |> Expect.toEqual(
+           Some({"max": "5500", "min": "5000", "userId": "USR4"}->Obj.magic),
+           _,
          );
     });
 

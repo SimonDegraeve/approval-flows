@@ -197,7 +197,7 @@ let make =
       ~onClose,
       ~onChange,
     ) => {
-  // Handle thresholds state
+  // Handle thresholds create/update/delete
   let (state, send) =
     React.useReducer(
       (state, action) =>
