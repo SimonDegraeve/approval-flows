@@ -184,7 +184,7 @@ module TeamList = {
            teamName=name
            users={getUsersByUserIds(users, userIds)}
            thresholds={getThresholdsByTeamId(approvalFlows, id)}
-           onConfirm={thresholds =>
+           onChange={thresholds =>
              onApprovalFlowsChange(
                approvalFlows
                ->Belt.Array.keep(({teamId}) => teamId !== id)

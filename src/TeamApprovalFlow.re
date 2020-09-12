@@ -67,7 +67,7 @@ module Form = {
         <Input
           id="max"
           type_="number"
-          min=?{min->Belt.Option.map(min => (min +. 1.0)->Js.Float.toString)}
+          min=?{min->Belt.Option.map(Js.Float.toString)}
           value={
             max
             ->Belt.Option.map(Js.Float.toString)
@@ -116,7 +116,8 @@ module Form = {
 
 module ThresholdListItem = {
   [@react.component]
-  let make = (~id, ~min: float, ~max: float, ~user: user, ~onDelete) => {
+  let make =
+      (~id, ~min: float, ~max: float, ~user: user, ~onDelete, ~onSelect) => {
     <Spread props={"data-testid": "threshold-list-item-" ++ id}>
       <li className="flex justify-between items-center">
         <p className="truncate text-gray-700 py-4">
@@ -132,16 +133,35 @@ module ThresholdListItem = {
            )
            ->React.string}
         </p>
-        <Button
-          onClick={_ => onDelete()}
-          className="text-sm pl-2 pr-2 pt-1 pb-1"
-          type_="button">
-          "Delete"->React.string
-        </Button>
+        <div>
+          <Button
+            onClick={_ => onSelect()}
+            className="text-sm pl-2 pr-2 pt-1 pb-1 mr-2"
+            type_="button">
+            "Edit"->React.string
+          </Button>
+          <Button
+            onClick={_ => onDelete()}
+            className="text-sm pl-2 pr-2 pt-1 pb-1"
+            type_="button">
+            "Delete"->React.string
+          </Button>
+        </div>
       </li>
     </Spread>;
   };
 };
+
+type state = {
+  thresholds: array(threshold),
+  selectedThreshold: option(int),
+};
+
+type action =
+  | CreateThreshold(threshold)
+  | UpdateThreshold(threshold, int)
+  | DeleteThreshold(int)
+  | SelectThreshold(int);
 
 [@react.component]
 let make =
@@ -150,18 +170,67 @@ let make =
       ~users: array(user),
       ~thresholds: array(threshold),
       ~onClose,
-      ~onConfirm,
+      ~onChange,
     ) => {
   let (formKey, setFormKey) = React.useState(() => 1);
-  let onCreateThreshold = threshold => {
-    onConfirm(thresholds->Belt.Array.concat([|threshold|]));
-    setFormKey(key => key + 1);
-  };
 
-  let onDeleteThreshold = index => {
-    onConfirm(thresholds->Belt.Array.keepWithIndex((_, i) => i !== index));
-    setFormKey(key => key + 1);
-  };
+  // Handle thresholds state
+  let (state, send) =
+    React.useReducer(
+      (state, action) =>
+        switch (action) {
+        | CreateThreshold(threshold) => {
+            thresholds: state.thresholds->Belt.Array.concat([|threshold|]),
+            selectedThreshold: None,
+          }
+        | UpdateThreshold(threshold, index) => {
+            thresholds:
+              state.thresholds
+              ->Belt.Array.mapWithIndex((currentIndex, currentThreshold) =>
+                  index === currentIndex ? threshold : currentThreshold
+                ),
+            selectedThreshold: None,
+          }
+        | DeleteThreshold(index) => {
+            thresholds:
+              state.thresholds
+              ->Belt.Array.keepWithIndex((_, i) => i !== index),
+            selectedThreshold: None,
+          }
+        | SelectThreshold(index) => {
+            thresholds: state.thresholds,
+            selectedThreshold: Some(index),
+          }
+        },
+      {thresholds, selectedThreshold: None},
+    );
+
+  // Notify parent on change
+  React.useEffect1(
+    () => {
+      if (state.thresholds !== thresholds) {
+        Js.log("ok");
+        onChange(state.thresholds);
+        setFormKey(key => key + 1);
+      };
+      None;
+    },
+    [|state.thresholds|],
+  );
+
+  // Reset form on threshold selection
+  React.useEffect1(
+    () => {
+      setFormKey(key => key + 1);
+      None;
+    },
+    [|state.selectedThreshold|],
+  );
+
+  let selectedThreshold =
+    state.selectedThreshold
+    ->Belt.Option.flatMap(index => state.thresholds->Belt.Array.get(index));
+
   <Container>
     <div className="flex justify-between">
       <h1 className="text-blue-800 mb-4 text-lg font-semibold">
@@ -173,7 +242,7 @@ let make =
     </div>
     <Spread props={"data-testid": "team-approval-flow"}>
       <ul className="divide-y mb-6">
-        {thresholds
+        {state.thresholds
          ->Belt.Array.mapWithIndex((index, {min, max, userId}) =>
              <ThresholdListItem
                key={index->Js.Int.toString}
@@ -181,12 +250,44 @@ let make =
                min
                max
                user={getUserByUserId(users, userId)->Belt.Option.getExn}
-               onDelete={() => onDeleteThreshold(index)}
+               onDelete={() => send(DeleteThreshold(index))}
+               onSelect={() => send(SelectThreshold(index))}
              />
            )
          ->React.array}
       </ul>
     </Spread>
-    <Form users onChange=onCreateThreshold key={formKey->Js.Int.toString} />
+    <Form
+      users
+      min=?{
+        switch (selectedThreshold) {
+        | None =>
+          // Use previous max value as lower bound for new threshold
+          state.thresholds
+          ->Belt.Array.get(thresholds->Belt.Array.length - 1)
+          ->Belt.Option.map(({max}) => max)
+        | Some(selectedThreshold) => Some(selectedThreshold.min)
+        }
+      }
+      max=?{
+        switch (selectedThreshold) {
+        | None => None
+        | Some(selectedThreshold) => Some(selectedThreshold.max)
+        }
+      }
+      userId=?{
+        switch (selectedThreshold) {
+        | None => None
+        | Some(selectedThreshold) => Some(selectedThreshold.userId)
+        }
+      }
+      onChange={threshold => {
+        switch (state.selectedThreshold) {
+        | None => send(CreateThreshold(threshold))
+        | Some(index) => send(UpdateThreshold(threshold, index))
+        }
+      }}
+      key={formKey->Js.Int.toString}
+    />
   </Container>;
 };

@@ -211,7 +211,7 @@ describe("As an Admin", () => {
           teamName="test"
           users
           thresholds={approvalFlows[0].thresholds}
-          onConfirm={_ => ()}
+          onChange={_ => ()}
           onClose=fn
         />
         |> render(_);
@@ -237,7 +237,7 @@ describe("As an Admin", () => {
           teamName="test"
           users
           thresholds={approvalFlows[0].thresholds}
-          onConfirm=fn
+          onChange=fn
           onClose={() => ()}
         />
         |> render(_);
@@ -277,6 +277,73 @@ describe("As an Admin", () => {
          |> ignore; */
 
       mockFn |> MockJs.calls |> Expect.expect |> Expect.toEqual([||], _);
+    });
+
+    testPromise("updates a threshold in an approval flow", () => {
+      let mockFn = JestJs.fn(_ => ());
+      let fn = MockJs.fn(mockFn);
+
+      let result =
+        <TeamApprovalFlow
+          teamName="test"
+          users
+          thresholds={approvalFlows[0].thresholds}
+          onChange=fn
+          onClose={() => ()}
+        />
+        |> render(_);
+
+      result
+      |> getAllByRole(~matcher=`Str("button"), _)
+      |> Array.get(_, 1)
+      |> FireEvent.click(_)
+      |> ignore;
+
+      result
+      |> findByLabelText(~matcher=`Str("To"), _)
+      |> Js.Promise.then_(element =>
+           element
+           |> expect
+           |> toHaveValue(`Num(500), _)
+           |> Js.Promise.resolve
+         );
+    });
+
+    testPromise("deletes a threshold in an approval flow", () => {
+      let mockFn = JestJs.fn(_ => ());
+      let fn = MockJs.fn(mockFn);
+
+      let result =
+        <TeamApprovalFlow
+          teamName="test"
+          users
+          thresholds={approvalFlows[0].thresholds}
+          onChange=fn
+          onClose={() => ()}
+        />
+        |> render(_);
+
+      result
+      |> getAllByRole(~matcher=`Str("button"), _)
+      |> Array.get(_, 2)
+      |> FireEvent.click(_)
+      |> ignore;
+
+      result
+      |> findByTestId(~matcher=`Str("threshold-list-item-0"), _)
+      |> Js.Promise.then_(element =>
+           element
+           |> expect
+           |> toHaveTextContent(
+                `RegExp(
+                  [%re
+                    "/^From 500 to 1000€ needs approval by Sandra ReedEditDelete$/"
+                  ],
+                ),
+                _,
+              )
+           |> Js.Promise.resolve
+         );
     });
   });
 });
