@@ -25,6 +25,12 @@ type user = {
   email: string,
 };
 
+type teamWithUsers = {
+  id: teamId,
+  name: string,
+  users: array(user),
+};
+
 type threshold = {
   min: float,
   max: float,

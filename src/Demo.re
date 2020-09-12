@@ -6,7 +6,7 @@ module App = {
     };
 
     <div className="h-screen flex justify-center items-center">
-      <div className="max-w-xl w-full rounded overflow-hidden shadow-lg p-4">
+      <div className="max-w-4xl w-full rounded overflow-hidden shadow-lg p-4">
         <ApiContext.Provider value=apiOptions>
           <TeamApprovalFlows />
         </ApiContext.Provider>
