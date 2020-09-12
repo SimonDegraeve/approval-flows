@@ -186,7 +186,7 @@ type action =
   | CreateThreshold(threshold)
   | UpdateThreshold(threshold, int)
   | DeleteThreshold(int)
-  | SelectThreshold(int);
+  | SelectThreshold(option(int));
 
 [@react.component]
 let make =
@@ -222,7 +222,7 @@ let make =
           }
         | SelectThreshold(index) => {
             thresholds: state.thresholds,
-            selectedThreshold: Some(index),
+            selectedThreshold: index,
           }
         },
       {thresholds, selectedThreshold: None},
@@ -248,9 +248,21 @@ let make =
       <h1 className="text-blue-800 mb-4 text-lg font-semibold">
         {"Teams approval flows for " ++ teamName |> React.string}
       </h1>
-      <Button onClick={_ => onClose()} type_="button">
-        "Close"->React.string
-      </Button>
+      <div>
+        {switch (selectedThreshold) {
+         | None => React.null
+         | Some(_) =>
+           <Button
+             onClick={_ => send(SelectThreshold(None))}
+             type_="button"
+             className="mr-2">
+             "New"->React.string
+           </Button>
+         }}
+        <Button onClick={_ => onClose()} type_="button">
+          "Close"->React.string
+        </Button>
+      </div>
     </div>
     <Spread props={"data-testid": "team-approval-flow"}>
       <ul className="divide-y mb-6">
@@ -263,7 +275,7 @@ let make =
                max
                user={getUserByUserId(users, userId)->Belt.Option.getExn}
                onDelete={() => send(DeleteThreshold(index))}
-               onSelect={() => send(SelectThreshold(index))}
+               onSelect={() => send(SelectThreshold(Some(index)))}
              />
            )
          ->React.array}
