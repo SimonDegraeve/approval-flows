@@ -67,7 +67,7 @@ module Form = {
         <Input
           id="max"
           type_="number"
-          min=?{min->Belt.Option.map(Js.Float.toString)}
+          min=?{min->Belt.Option.map(min => (min +. 1.0)->Js.Float.toString)}
           value={
             max
             ->Belt.Option.map(Js.Float.toString)
@@ -116,28 +116,30 @@ module Form = {
 
 module ThresholdListItem = {
   [@react.component]
-  let make = (~min: float, ~max: float, ~user: user, ~onDelete) => {
-    <li className="flex justify-between items-center">
-      <p className="truncate text-gray-700 py-4">
-        {(
-           "From "
-           ++ min->Js.Float.toString
-           ++ " to "
-           ++ max->Js.Float.toString
-           ++ {j|€ needs approval by |j}
-           ++ user.firstName
-           ++ " "
-           ++ user.lastName
-         )
-         ->React.string}
-      </p>
-      <Button
-        onClick={_ => onDelete()}
-        className="text-sm pl-2 pr-2 pt-1 pb-1"
-        type_="button">
-        "Delete"->React.string
-      </Button>
-    </li>;
+  let make = (~id, ~min: float, ~max: float, ~user: user, ~onDelete) => {
+    <Spread props={"data-testid": "threshold-list-item-" ++ id}>
+      <li className="flex justify-between items-center">
+        <p className="truncate text-gray-700 py-4">
+          {(
+             "From "
+             ++ min->Js.Float.toString
+             ++ " to "
+             ++ max->Js.Float.toString
+             ++ {j|€ needs approval by |j}
+             ++ user.firstName
+             ++ " "
+             ++ user.lastName
+           )
+           ->React.string}
+        </p>
+        <Button
+          onClick={_ => onDelete()}
+          className="text-sm pl-2 pr-2 pt-1 pb-1"
+          type_="button">
+          "Delete"->React.string
+        </Button>
+      </li>
+    </Spread>;
   };
 };
 
@@ -152,7 +154,7 @@ let make =
     ) => {
   let (formKey, setFormKey) = React.useState(() => 1);
   let onCreateThreshold = threshold => {
-    onConfirm(thresholds->Js.Array.concat([|threshold|]));
+    onConfirm(thresholds->Belt.Array.concat([|threshold|]));
     setFormKey(key => key + 1);
   };
 
@@ -160,7 +162,6 @@ let make =
     onConfirm(thresholds->Belt.Array.keepWithIndex((_, i) => i !== index));
     setFormKey(key => key + 1);
   };
-
   <Container>
     <div className="flex justify-between">
       <h1 className="text-blue-800 mb-4 text-lg font-semibold">
@@ -170,19 +171,22 @@ let make =
         "Close"->React.string
       </Button>
     </div>
-    <ul className="divide-y mb-6">
-      {thresholds
-       ->Belt.Array.mapWithIndex((index, {min, max, userId}) =>
-           <ThresholdListItem
-             key={index->Js.Int.toString}
-             min
-             max
-             user={getUserByUserId(users, userId)->Belt.Option.getExn}
-             onDelete={() => onDeleteThreshold(index)}
-           />
-         )
-       ->React.array}
-    </ul>
+    <Spread props={"data-testid": "team-approval-flow"}>
+      <ul className="divide-y mb-6">
+        {thresholds
+         ->Belt.Array.mapWithIndex((index, {min, max, userId}) =>
+             <ThresholdListItem
+               key={index->Js.Int.toString}
+               id={index->Js.Int.toString}
+               min
+               max
+               user={getUserByUserId(users, userId)->Belt.Option.getExn}
+               onDelete={() => onDeleteThreshold(index)}
+             />
+           )
+         ->React.array}
+      </ul>
+    </Spread>
     <Form users onChange=onCreateThreshold key={formKey->Js.Int.toString} />
   </Container>;
 };

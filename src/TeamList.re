@@ -78,8 +78,8 @@ let useLocalApprovalFlows = () => {
  */
 module UserListItem = {
   [@react.component]
-  let make = (~name: string) => {
-    <Spread props={"data-testid": "user-list-item"}>
+  let make = (~id: userId, ~name: string) => {
+    <Spread props={"data-testid": "user-list-item-" ++ id->idToString}>
       <li>
         <p className="truncate text-gray-700"> {name |> React.string} </p>
       </li>
@@ -91,6 +91,7 @@ module TeamListItem = {
   [@react.component]
   let make =
       (
+        ~id: teamId,
         ~name: string,
         ~users: array(user),
         ~usersVisible: int=3,
@@ -98,8 +99,8 @@ module TeamListItem = {
         ~approvers: array(user),
         ~onSelect: unit => unit,
       ) => {
-    <Spread props={"data-testid": "team-list-item"}>
-      <li className="px-6 py-2">
+    <Spread props={"data-testid": "team-list-item-" ++ id->idToString}>
+      <li className="px-6 py-2 cursor-pointer" onClick={_ => onSelect()}>
         <p className="truncate font-semibold"> {name |> React.string} </p>
         <div className="flex justify-between">
           <div className="flex-1 flex flex-col">
@@ -110,32 +111,30 @@ module TeamListItem = {
                ->Belt.Array.map(({firstName, lastName, id}) =>
                    <UserListItem
                      key={id->idToString}
+                     id
                      name={firstName ++ " " ++ lastName}
                    />
                  )
                ->React.array}
             </ul>
           </div>
-          <div className="flex-1 flex flex-col items-end">
-            <h3> "Approvers"->React.string </h3>
-            <ul className="flex gap-x-3">
-              {approvers
-               ->Belt.Array.slice(~offset=0, ~len=approversVisible)
-               ->Belt.Array.map(({firstName, lastName, id}) =>
-                   <UserListItem
-                     key={id->idToString}
-                     name={firstName ++ " " ++ lastName}
-                   />
-                 )
-               ->React.array}
-              <Button
-                type_="button"
-                onClick={_ => onSelect()}
-                className="text-sm pl-2 pr-2 pt-1 pb-1">
-                "Edit"->React.string
-              </Button>
-            </ul>
-          </div>
+          {approvers->Belt.Array.length > 0
+             ? <div className="flex-1 flex flex-col items-end">
+                 <h3> "Approvers"->React.string </h3>
+                 <ul className="flex gap-x-3">
+                   {approvers
+                    ->Belt.Array.slice(~offset=0, ~len=approversVisible)
+                    ->Belt.Array.map(({firstName, lastName, id}) =>
+                        <UserListItem
+                          key={id->idToString}
+                          id
+                          name={firstName ++ " " ++ lastName}
+                        />
+                      )
+                    ->React.array}
+                 </ul>
+               </div>
+             : React.null}
         </div>
       </li>
     </Spread>;
@@ -157,23 +156,26 @@ module TeamList = {
       <h1 className="text-blue-800 mb-4 text-lg font-semibold">
         {"Teams approval flows" |> React.string}
       </h1>
-      <ul className="divide-y">
-        {teams
-         ->Belt.Array.map(({name, id, userIds}) =>
-             <TeamListItem
-               key={id->idToString}
-               name
-               users={getUsersByUserIds(users, userIds)}
-               approvers={
-                 getThresholdsByTeamId(approvalFlows, id)
-                 ->Belt.Array.map(({userId}) => userId)
-                 ->getUsersByUserIds(users, _)
-               }
-               onSelect={() => setSelectedTeam(_ => Some(id))}
-             />
-           )
-         ->React.array}
-      </ul>
+      <Spread props={"data-testid": "team-list"}>
+        <ul className="divide-y">
+          {teams
+           ->Belt.Array.map(({name, id, userIds}) =>
+               <TeamListItem
+                 key={id->idToString}
+                 id
+                 name
+                 users={getUsersByUserIds(users, userIds)}
+                 approvers={
+                   getThresholdsByTeamId(approvalFlows, id)
+                   ->Belt.Array.map(({userId}) => userId)
+                   ->getUsersByUserIds(users, _)
+                 }
+                 onSelect={() => setSelectedTeam(_ => Some(id))}
+               />
+             )
+           ->React.array}
+        </ul>
+      </Spread>
       {switch (selectedTeam) {
        | Some(id) =>
          let {userIds, name} =
