@@ -78,7 +78,8 @@ module Form = {
       </div>
       <div className="mb-6">
         <label
-          className="block text-gray-700 text-sm font-bold mb-2" htmlFor="max">
+          className="block text-gray-700 text-sm font-bold mb-2"
+          htmlFor="user">
           "User"->React.string
         </label>
         <Select
@@ -209,7 +210,6 @@ let make =
   React.useEffect1(
     () => {
       if (state.thresholds !== thresholds) {
-        Js.log("ok");
         onChange(state.thresholds);
         setFormKey(key => key + 1);
       };

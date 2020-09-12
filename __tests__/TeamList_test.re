@@ -246,7 +246,7 @@ describe("As an Admin", () => {
       |> getByLabelText(~matcher=`Str("From"), _)
       |> FireEvent.change(~eventInit={
                             "target": {
-                              "value": "500",
+                              "value": "5000",
                             },
                           })
       |> ignore;
@@ -255,7 +255,7 @@ describe("As an Admin", () => {
       |> getByLabelText(~matcher=`Str("To"), _)
       |> FireEvent.change(~eventInit={
                             "target": {
-                              "value": "1000",
+                              "value": "5500",
                             },
                           })
       |> ignore;
@@ -269,17 +269,24 @@ describe("As an Admin", () => {
                           })
       |> ignore;
 
-      // TODO: Fix Select selection
-      // See https://stackoverflow.com/questions/55575843/how-to-test-react-select-with-react-testing-library
-      /* result
-         |> getByText(~matcher=`Str("Confirm"), _)
-         |> FireEvent.click(_)
-         |> ignore; */
+      result
+      |> getByText(~matcher=`Str("Confirm"), _)
+      |> FireEvent.click(_)
+      |> ignore;
 
-      mockFn |> MockJs.calls |> Expect.expect |> Expect.toEqual([||], _);
+      mockFn
+      |> MockJs.calls
+      |> Belt.Array.get(_, 0)
+      |> Belt.Option.getWithDefault(_, [||])
+      |> Belt.Array.get(_, 4)
+      |> Expect.expect
+      |> Expect.toEqual(
+           Some({"max": "5500", "min": "5000", "userId": "USR4"}->Obj.magic),
+           _,
+         );
     });
 
-    testPromise("updates a threshold in an approval flow", () => {
+    testPromise("updates a bound threshold in an approval flow", () => {
       let mockFn = JestJs.fn(_ => ());
       let fn = MockJs.fn(mockFn);
 
@@ -305,6 +312,36 @@ describe("As an Admin", () => {
            element
            |> expect
            |> toHaveValue(`Num(500), _)
+           |> Js.Promise.resolve
+         );
+    });
+
+    testPromise("updates a user threshold in an approval flow", () => {
+      let mockFn = JestJs.fn(_ => ());
+      let fn = MockJs.fn(mockFn);
+
+      let result =
+        <TeamApprovalFlow
+          teamName="test"
+          users
+          thresholds={approvalFlows[0].thresholds}
+          onChange=fn
+          onClose={() => ()}
+        />
+        |> render(_);
+
+      result
+      |> getAllByRole(~matcher=`Str("button"), _)
+      |> Array.get(_, 1)
+      |> FireEvent.click(_)
+      |> ignore;
+
+      result
+      |> findByLabelText(~matcher=`Str("User"), _)
+      |> Js.Promise.then_(element =>
+           element
+           |> expect
+           |> toHaveValue(`Str("USR2"), _)
            |> Js.Promise.resolve
          );
     });
