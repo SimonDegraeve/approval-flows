@@ -1,4 +1,5 @@
 open Types;
+open Components;
 
 /**
  * Fetcher utils
@@ -127,12 +128,12 @@ module TeamListItem = {
                    />
                  )
                ->React.array}
-              <button
+              <Button
                 type_="button"
                 onClick={_ => onSelect()}
-                className="bg-gray-200 hover:bg-gray-300 font-bold px-2 py-1 rounded focus:outline-none focus:shadow-outline text-sm">
+                className="text-sm pl-2 pr-2 pt-1 pb-1">
                 "Edit"->React.string
-              </button>
+              </Button>
             </ul>
           </div>
         </div>

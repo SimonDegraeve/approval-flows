@@ -1,4 +1,5 @@
 open Types;
+open Components;
 
 module Form = {
   [@react.component]
@@ -45,8 +46,7 @@ module Form = {
           className="block text-gray-700 text-sm font-bold mb-2" htmlFor="min">
           "From"->React.string
         </label>
-        <input
-          className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+        <Input
           id="min"
           required=true
           type_="number"
@@ -64,8 +64,7 @@ module Form = {
           className="block text-gray-700 text-sm font-bold mb-2" htmlFor="max">
           "To"->React.string
         </label>
-        <input
-          className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+        <Input
           id="max"
           type_="number"
           min=?{min->Belt.Option.map(Js.Float.toString)}
@@ -82,9 +81,8 @@ module Form = {
           className="block text-gray-700 text-sm font-bold mb-2" htmlFor="max">
           "User"->React.string
         </label>
-        <select
+        <Select
           required=true
-          className="appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           id="user"
           value={
             userId
@@ -104,14 +102,13 @@ module Form = {
              );
            }
            ->React.array}
-        </select>
+        </Select>
       </div>
       <div className="flex items-center justify-between">
-        <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          type_="submit">
+        <Button
+          className="bg-blue-500 hover:bg-blue-700 text-white" type_="submit">
           "Confirm"->React.string
-        </button>
+        </Button>
       </div>
     </form>;
   };
@@ -134,12 +131,12 @@ module ThresholdListItem = {
          )
          ->React.string}
       </p>
-      <button
+      <Button
         onClick={_ => onDelete()}
-        className="bg-gray-200 hover:bg-gray-300 font-bold px-2 py-1 rounded focus:outline-none focus:shadow-outline text-sm"
+        className="text-sm pl-2 pr-2 pt-1 pb-1"
         type_="button">
         "Delete"->React.string
-      </button>
+      </Button>
     </li>;
   };
 };
@@ -169,12 +166,9 @@ let make =
       <h1 className="text-blue-800 mb-4 text-lg font-semibold">
         {"Teams approval flows for " ++ teamName |> React.string}
       </h1>
-      <button
-        onClick={_ => onClose()}
-        className="bg-gray-200 hover:bg-gray-300 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-        type_="button">
+      <Button onClick={_ => onClose()} type_="button">
         "Close"->React.string
-      </button>
+      </Button>
     </div>
     <ul className="divide-y mb-6">
       {thresholds
