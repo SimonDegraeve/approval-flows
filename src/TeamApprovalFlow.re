@@ -7,27 +7,48 @@ module Form = {
       (
         ~users: array(user),
         ~onChange: threshold => unit,
-        ~min: option(float)=?,
-        ~max: option(float)=?,
-        ~userId: option(userId)=?,
+        ~min as initialMin: option(float)=?,
+        ~max as initialMax: option(float)=?,
+        ~userId as initialUserId: option(userId)=?,
       ) => {
-    let (min, setMin) = React.useState(() => min);
+    let (min, setMin) = React.useState(() => initialMin);
     let onMinChange = event => {
       let value = event->ReactEvent.Form.target##value;
       setMin(_ => value);
     };
+    React.useEffect1(
+      () => {
+        setMin(_ => initialMin);
+        None;
+      },
+      [|initialMin|],
+    );
 
-    let (max, setMax) = React.useState(() => max);
+    let (max, setMax) = React.useState(() => initialMax);
     let onMaxChange = event => {
       let value = event->ReactEvent.Form.target##value;
       setMax(_ => value);
     };
+    React.useEffect1(
+      () => {
+        setMax(_ => initialMax);
+        None;
+      },
+      [|initialMax|],
+    );
 
-    let (userId, setUserId) = React.useState(() => userId);
+    let (userId, setUserId) = React.useState(() => initialUserId);
     let onUserChange = event => {
       let value = event->ReactEvent.Form.target##value;
       setUserId(_ => value);
     };
+    React.useEffect1(
+      () => {
+        setUserId(_ => initialUserId);
+        None;
+      },
+      [|initialMax|],
+    );
 
     let onSubmit = event => {
       event->ReactEvent.Form.preventDefault;
@@ -38,6 +59,9 @@ module Form = {
           userId: userId->Belt.Option.getExn,
         }: threshold,
       );
+      setMin(_ => None);
+      setMax(_ => None);
+      setUserId(_ => None);
     };
 
     <form className="max-w-sm" onSubmit>
@@ -50,7 +74,7 @@ module Form = {
           id="min"
           required=true
           type_="number"
-          min="0"
+          min=?{min->Belt.Option.map(Js.Float.toString)}
           value={
             min
             ->Belt.Option.map(Js.Float.toString)
@@ -173,8 +197,6 @@ let make =
       ~onClose,
       ~onChange,
     ) => {
-  let (formKey, setFormKey) = React.useState(() => 1);
-
   // Handle thresholds state
   let (state, send) =
     React.useReducer(
@@ -211,20 +233,10 @@ let make =
     () => {
       if (state.thresholds !== thresholds) {
         onChange(state.thresholds);
-        setFormKey(key => key + 1);
       };
       None;
     },
     [|state.thresholds|],
-  );
-
-  // Reset form on threshold selection
-  React.useEffect1(
-    () => {
-      setFormKey(key => key + 1);
-      None;
-    },
-    [|state.selectedThreshold|],
   );
 
   let selectedThreshold =
@@ -259,35 +271,24 @@ let make =
     </Spread>
     <Form
       users
-      min=?{
-        switch (selectedThreshold) {
-        | None =>
-          // Use previous max value as lower bound for new threshold
-          state.thresholds
-          ->Belt.Array.get(thresholds->Belt.Array.length - 1)
-          ->Belt.Option.map(({max}) => max)
-        | Some(selectedThreshold) => Some(selectedThreshold.min)
-        }
+      min={
+        selectedThreshold
+        ->Belt.Option.map(({min}) => min)
+        ->Belt.Option.getWithDefault(
+            state.thresholds
+            ->Belt.Array.get(thresholds->Belt.Array.length - 1)
+            ->Belt.Option.map(({max}) => max)
+            ->Belt.Option.getWithDefault(0.0),
+          )
       }
-      max=?{
-        switch (selectedThreshold) {
-        | None => None
-        | Some(selectedThreshold) => Some(selectedThreshold.max)
-        }
-      }
-      userId=?{
-        switch (selectedThreshold) {
-        | None => None
-        | Some(selectedThreshold) => Some(selectedThreshold.userId)
-        }
-      }
+      max=?{selectedThreshold->Belt.Option.map(({max}) => max)}
+      userId=?{selectedThreshold->Belt.Option.map(({userId}) => userId)}
       onChange={threshold => {
         switch (state.selectedThreshold) {
         | None => send(CreateThreshold(threshold))
         | Some(index) => send(UpdateThreshold(threshold, index))
         }
       }}
-      key={formKey->Js.Int.toString}
     />
   </Container>;
 };

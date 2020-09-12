@@ -69,15 +69,42 @@ let teams: array(team) = [|
   },
 |];
 
-let approvalFlows: array(approvalFlow) = [|
+let teamsWithUsers: array(TeamList.TeamList.team) = [|
   {
-    teamId: TeamId("TEAM1"),
+    id: TeamId("TEAM1"),
+    name: "Marketing",
+    users: [|users[1], users[3], users[4], users[5]|],
+    approvers: [||],
+    thresholds: [||],
+  },
+  {
+    id: TeamId("TEAM2"),
+    name: "Product & Engineering",
+    users: [|users[0], users[2]|],
+    approvers: [||],
+    thresholds: [||],
+  },
+|];
+
+let teamsWithApprovers: array(TeamList.TeamList.team) = [|
+  {
+    id: TeamId("TEAM1"),
+    name: "Marketing",
+    users: [|users[1], users[3], users[4], users[5]|],
+    approvers: [|users[1], users[3], users[4], users[5]|],
     thresholds: [|
       {min: 0.0, max: 500.0, userId: UserId("USR2")},
       {min: 500.0, max: 1000.0, userId: UserId("USR4")},
       {min: 1000.0, max: 5000.0, userId: UserId("USR5")},
       {min: 5.000, max: infinity, userId: UserId("USR6")},
     |],
+  },
+  {
+    id: TeamId("TEAM2"),
+    name: "Product & Engineering",
+    users: [|users[0], users[2]|],
+    approvers: [||],
+    thresholds: [||],
   },
 |];
 
@@ -100,7 +127,7 @@ afterAll(() => server##close());
 describe("As an Admin", () => {
   describe("shows the list of the teams", () => {
     test("shows the component", () => {
-      let result = <TeamList.TeamList teams /> |> render(_);
+      let result = <TeamList.TeamList teams=teamsWithUsers /> |> render(_);
 
       result
       |> getByTestId(~matcher=`Str("team-list"), _)
@@ -109,7 +136,7 @@ describe("As an Admin", () => {
     });
 
     test("shows the name of a team", () => {
-      let result = <TeamList.TeamList teams /> |> render(_);
+      let result = <TeamList.TeamList teams=teamsWithUsers /> |> render(_);
 
       result
       |> getByTestId(~matcher=`Str("team-list-item-TEAM1"), _)
@@ -154,7 +181,7 @@ describe("As an Admin", () => {
     });
 
     test("shows the first 3 members of a team", () => {
-      let result = <TeamList.TeamList teams users /> |> render(_);
+      let result = <TeamList.TeamList teams=teamsWithUsers /> |> render(_);
 
       result
       |> getByTestId(~matcher=`Str("team-list-item-TEAM1"), _)
@@ -169,7 +196,7 @@ describe("As an Admin", () => {
 
     test("shows the first 3 approvers of a team", () => {
       let result =
-        <TeamList.TeamList teams users approvalFlows /> |> render(_);
+        <TeamList.TeamList teams=teamsWithApprovers /> |> render(_);
 
       result
       |> getByTestId(~matcher=`Str("team-list-item-TEAM1"), _)
@@ -186,7 +213,7 @@ describe("As an Admin", () => {
 
     testPromise("when click on a team it shows the approval flow", () => {
       let result =
-        <TeamList.TeamList teams users approvalFlows /> |> render(_);
+        <TeamList.TeamList teams=teamsWithApprovers /> |> render(_);
 
       result
       |> getByTestId(~matcher=`Str("team-list-item-TEAM1"), _)
@@ -210,7 +237,7 @@ describe("As an Admin", () => {
         <TeamApprovalFlow
           teamName="test"
           users
-          thresholds={approvalFlows[0].thresholds}
+          thresholds={teamsWithApprovers[0].thresholds}
           onChange={_ => ()}
           onClose=fn
         />
@@ -236,7 +263,7 @@ describe("As an Admin", () => {
         <TeamApprovalFlow
           teamName="test"
           users
-          thresholds={approvalFlows[0].thresholds}
+          thresholds={teamsWithApprovers[0].thresholds}
           onChange=fn
           onClose={() => ()}
         />
@@ -294,7 +321,7 @@ describe("As an Admin", () => {
         <TeamApprovalFlow
           teamName="test"
           users
-          thresholds={approvalFlows[0].thresholds}
+          thresholds={teamsWithApprovers[0].thresholds}
           onChange=fn
           onClose={() => ()}
         />
@@ -324,7 +351,7 @@ describe("As an Admin", () => {
         <TeamApprovalFlow
           teamName="test"
           users
-          thresholds={approvalFlows[0].thresholds}
+          thresholds={teamsWithApprovers[0].thresholds}
           onChange=fn
           onClose={() => ()}
         />
@@ -354,7 +381,7 @@ describe("As an Admin", () => {
         <TeamApprovalFlow
           teamName="test"
           users
-          thresholds={approvalFlows[0].thresholds}
+          thresholds={teamsWithApprovers[0].thresholds}
           onChange=fn
           onClose={() => ()}
         />

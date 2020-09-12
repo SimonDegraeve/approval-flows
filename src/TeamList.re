@@ -141,14 +141,22 @@ module TeamListItem = {
   };
 };
 
+// Dumb component: data agnostic
 module TeamList = {
+  type team = {
+    id: teamId,
+    name: string,
+    users: array(user),
+    approvers: array(user),
+    thresholds: array(threshold),
+  };
+
   [@react.component]
   let make =
       (
         ~teams: array(team),
-        ~users: array(user)=[||],
-        ~approvalFlows: array(approvalFlow)=[||],
-        ~onApprovalFlowsChange: array(approvalFlow) => unit=_ => (),
+        ~onApprovalFlowsChange: (teamId, array(threshold)) => unit=(_, _) =>
+                                                                    (),
       ) => {
     let (selectedTeam, setSelectedTeam) = React.useState(() => None);
 
@@ -159,17 +167,13 @@ module TeamList = {
       <Spread props={"data-testid": "team-list"}>
         <ul className="divide-y">
           {teams
-           ->Belt.Array.map(({name, id, userIds}) =>
+           ->Belt.Array.map(({name, id, users, approvers}) =>
                <TeamListItem
                  key={id->idToString}
                  id
                  name
-                 users={getUsersByUserIds(users, userIds)}
-                 approvers={
-                   getThresholdsByTeamId(approvalFlows, id)
-                   ->Belt.Array.map(({userId}) => userId)
-                   ->getUsersByUserIds(users, _)
-                 }
+                 users
+                 approvers
                  onSelect={() => setSelectedTeam(_ => Some(id))}
                />
              )
@@ -178,19 +182,13 @@ module TeamList = {
       </Spread>
       {switch (selectedTeam) {
        | Some(id) =>
-         let {userIds, name} =
+         let {users, name, thresholds} =
            teams->Belt.Array.getBy(team => team.id === id)->Belt.Option.getExn;
          <TeamApprovalFlow
            teamName=name
-           users={getUsersByUserIds(users, userIds)}
-           thresholds={getThresholdsByTeamId(approvalFlows, id)}
-           onChange={thresholds =>
-             onApprovalFlowsChange(
-               approvalFlows
-               ->Belt.Array.keep(({teamId}) => teamId !== id)
-               ->Belt.Array.concat([|{teamId: id, thresholds}|]),
-             )
-           }
+           users
+           thresholds
+           onChange={thresholds => onApprovalFlowsChange(id, thresholds)}
            onClose={() => setSelectedTeam(_ => None)}
          />;
        | _ => React.null
@@ -199,6 +197,7 @@ module TeamList = {
   };
 };
 
+// Connected component: handle data fetching and data normalization
 [@react.component]
 let make = () => {
   let (teams, _, teamsError) = useFetcher("/spx-development/contents/teams");
@@ -220,10 +219,29 @@ let make = () => {
     </p>
   | (Some(teams), Some(users), Some(approvalFlows), _) =>
     <TeamList
-      users
-      teams
-      approvalFlows
-      onApprovalFlowsChange=saveApprovalFlows
+      teams={
+        teams->Belt.Array.map(({id, name, userIds}) =>
+          (
+            {
+              id,
+              name,
+              users: getUsersByUserIds(users, userIds),
+              approvers:
+                getThresholdsByTeamId(approvalFlows, id)
+                ->Belt.Array.map(({userId}) => userId)
+                ->getUsersByUserIds(users, _),
+              thresholds: getThresholdsByTeamId(approvalFlows, id),
+            }: TeamList.team
+          )
+        )
+      }
+      onApprovalFlowsChange={(id, thresholds) =>
+        saveApprovalFlows(
+          approvalFlows
+          ->Belt.Array.keep(({teamId}) => teamId !== id)
+          ->Belt.Array.concat([|{teamId: id, thresholds}|]),
+        )
+      }
     />
   | _ => <p className="text-gray-500 my-8"> {"loading..." |> React.string} </p>
   };
