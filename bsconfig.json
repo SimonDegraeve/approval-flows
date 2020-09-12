@@ -24,7 +24,7 @@
   ],
   "suffix": ".bs.js",
   "refmt": 3,
-  "bs-dependencies": ["reason-react"],
+  "bs-dependencies": ["reason-react", "bs-fetch"],
   "bs-dev-dependencies": ["@glennsl/bs-jest", "bs-jest-dom", "bs-react-testing-library"],
   "warnings": {
     "error": "+101+8"

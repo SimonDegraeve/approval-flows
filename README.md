@@ -15,6 +15,7 @@ npm install
 ## Dev
 
 - Run: `npm run dev`
+- Watch (optional): `npm run re:watch`
 - Visit: `localhost:1234`
 
 ## Test

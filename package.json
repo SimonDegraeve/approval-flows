@@ -5,8 +5,8 @@
     "build": "parcel build index.html",
     "serve": "cd dist && python -m SimpleHTTPServer 1234",
     "test": "bsb -make-world -clean-world && jest",
-    "res:build": "bsb -make-world -clean-world",
-    "res:watch": "bsb -make-world -clean-world -w",
+    "re:build": "bsb -make-world -clean-world",
+    "re:watch": "bsb -make-world -clean-world -w",
     "dev": "bsb -make-world -clean-world && parcel index.html --port 1234"
   },
   "jest": {
@@ -17,9 +17,11 @@
   "author": "Simon Degraeve",
   "license": "MIT",
   "dependencies": {
+    "bs-fetch": "^0.6.2",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
-    "reason-react": ">=0.9.1"
+    "reason-react": ">=0.9.1",
+    "swr": "^0.3.2"
   },
   "devDependencies": {
     "@glennsl/bs-jest": "^0.5.1",
