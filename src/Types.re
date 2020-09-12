@@ -28,10 +28,27 @@ type user = {
 type threshold = {
   min: float,
   max: float,
-  userId: array(userId),
+  userId,
 };
 
 type approvalFlow = {
   teamId,
   thresholds: array(threshold),
+};
+
+/**
+ * Data conversion utils
+ */
+let getUserByUserId = (users: array(user), id: userId) =>
+  users->Belt.Array.getBy(user => user.id === id);
+
+let getUsersByUserIds = (users: array(user), ids: array(userId)) =>
+  ids->Belt.Array.keepMap(id => getUserByUserId(users, id));
+
+let getThresholdsByTeamId =
+    (approvalFlows: array(approvalFlow), id: teamId): array(threshold) => {
+  approvalFlows
+  ->Belt.Array.getBy(({teamId}) => teamId === id)
+  ->Belt.Option.map(({thresholds}) => thresholds)
+  ->Belt.Option.getWithDefault([||]);
 };

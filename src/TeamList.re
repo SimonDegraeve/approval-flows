@@ -11,6 +11,8 @@ type fetchResult('data, 'error) = {
 [@bs.module "swr"]
 external useSwr: (string, 'fn) => fetchResult('data, 'error) = "default";
 
+[@bs.module "swr"] external revalidate: string => unit = "mutate";
+
 let useFetcher = path => {
   let apiOptions = React.useContext(ApiContext.context);
 
@@ -40,21 +42,24 @@ external getItem: string => string = "getItem";
 [@bs.val] [@bs.scope "localStorage"]
 external setItem: (string, string) => unit = "setItem";
 
+let approvalFlowsKey = "approval-flows";
+
 let saveApprovalFlows = (approvalFlows: array(approvalFlow)) => {
-  setItem("approval-flows", approvalFlows->Obj.magic->Js.Json.stringify);
+  setItem(approvalFlowsKey, approvalFlows->Obj.magic->Js.Json.stringify);
+  revalidate(approvalFlowsKey);
 };
 
 let useLocalApprovalFlows = () => {
   let fetcher = () =>
     (
-      try(Some(Js.Json.parseExn(getItem("approval-flows"))->Obj.magic)) {
+      try(Some(Js.Json.parseExn(getItem(approvalFlowsKey))->Obj.magic)) {
       | _ => None
       }
     )
     ->Js.Nullable.fromOption
     ->Js.Promise.resolve;
 
-  let {data, error} = useSwr("approval-flows", fetcher);
+  let {data, error} = useSwr(approvalFlowsKey, fetcher);
 
   let data =
     switch (data->Js.Nullable.toOption) {
@@ -65,23 +70,6 @@ let useLocalApprovalFlows = () => {
   let loading = false;
 
   (data, loading, error);
-};
-
-/**
- * Data conversion utils
- */
-let getUserByUserId = (users: array(user), id: userId) =>
-  users->Belt.Array.getBy(user => user.id === id);
-
-let getUsersByUserIds = (users: array(user), ids: array(userId)) =>
-  ids->Belt.Array.keepMap(id => getUserByUserId(users, id));
-
-let getThresholdsByTeamId =
-    (approvalFlows: array(approvalFlow), id: teamId): array(threshold) => {
-  approvalFlows
-  ->Belt.Array.getBy(({teamId}) => teamId === id)
-  ->Belt.Option.map(({thresholds}) => thresholds)
-  ->Belt.Option.getWithDefault([||]);
 };
 
 /**
@@ -102,9 +90,10 @@ module TeamListItem = {
   [@react.component]
   let make =
       (
-        ~id: teamId,
         ~name: string,
         ~users: array(user),
+        ~usersVisible: int=3,
+        ~approversVisible: int=3,
         ~approvers: array(user),
         ~onSelect: unit => unit,
       ) => {
@@ -114,9 +103,9 @@ module TeamListItem = {
         <div className="flex justify-between">
           <div className="flex-1 flex flex-col">
             <h3> "Members"->React.string </h3>
-            <ul className="flex gap-x-2">
+            <ul className="flex gap-x-3">
               {users
-               ->Belt.Array.slice(~offset=0, ~len=3)
+               ->Belt.Array.slice(~offset=0, ~len=usersVisible)
                ->Belt.Array.map(({firstName, lastName, id}) =>
                    <UserListItem
                      key={id->idToString}
@@ -128,9 +117,9 @@ module TeamListItem = {
           </div>
           <div className="flex-1 flex flex-col items-end">
             <h3> "Approvers"->React.string </h3>
-            <ul className="flex gap-x-2">
+            <ul className="flex gap-x-3">
               {approvers
-               ->Belt.Array.slice(~offset=0, ~len=3)
+               ->Belt.Array.slice(~offset=0, ~len=approversVisible)
                ->Belt.Array.map(({firstName, lastName, id}) =>
                    <UserListItem
                      key={id->idToString}
@@ -141,7 +130,7 @@ module TeamListItem = {
               <button
                 type_="button"
                 onClick={_ => onSelect()}
-                className="text-blue-500 font-semibold">
+                className="bg-gray-200 hover:bg-gray-300 font-bold px-2 py-1 rounded focus:outline-none focus:shadow-outline text-sm">
                 "Edit"->React.string
               </button>
             </ul>
@@ -159,6 +148,7 @@ module TeamList = {
         ~teams: array(team),
         ~users: array(user)=[||],
         ~approvalFlows: array(approvalFlow)=[||],
+        ~onApprovalFlowsChange: array(approvalFlow) => unit=_ => (),
       ) => {
     let (selectedTeam, setSelectedTeam) = React.useState(() => None);
 
@@ -171,10 +161,13 @@ module TeamList = {
          ->Belt.Array.map(({name, id, userIds}) =>
              <TeamListItem
                key={id->idToString}
-               id
                name
                users={getUsersByUserIds(users, userIds)}
-               approvers=[||]
+               approvers={
+                 getThresholdsByTeamId(approvalFlows, id)
+                 ->Belt.Array.map(({userId}) => userId)
+                 ->getUsersByUserIds(users, _)
+               }
                onSelect={() => setSelectedTeam(_ => Some(id))}
              />
            )
@@ -182,14 +175,20 @@ module TeamList = {
       </ul>
       {switch (selectedTeam) {
        | Some(id) =>
-         let {userIds, _} =
+         let {userIds, name} =
            teams->Belt.Array.getBy(team => team.id === id)->Belt.Option.getExn;
          <TeamApprovalFlow
-           id={id->idToString}
+           teamName=name
            users={getUsersByUserIds(users, userIds)}
            thresholds={getThresholdsByTeamId(approvalFlows, id)}
-           onConfirm={() => ()}
-           onCancel={() => setSelectedTeam(_ => None)}
+           onConfirm={thresholds =>
+             onApprovalFlowsChange(
+               approvalFlows
+               ->Belt.Array.keep(({teamId}) => teamId !== id)
+               ->Belt.Array.concat([|{teamId: id, thresholds}|]),
+             )
+           }
+           onClose={() => setSelectedTeam(_ => None)}
          />;
        | _ => React.null
        }}
@@ -217,7 +216,12 @@ let make = () => {
       {"An error occurred." |> React.string}
     </p>
   | (Some(teams), Some(users), Some(approvalFlows), _) =>
-    <TeamList users teams approvalFlows />
+    <TeamList
+      users
+      teams
+      approvalFlows
+      onApprovalFlowsChange=saveApprovalFlows
+    />
   | _ => <p className="text-gray-500 my-8"> {"loading..." |> React.string} </p>
   };
 };

@@ -51,6 +51,18 @@ let users: array(user) = [|
   },
 |];
 
+let approvalFlows: array(approvalFlow) = [|
+  {
+    teamId: TeamId("TEAM1"),
+    thresholds: [|
+      {min: 0.0, max: 500.0, userId: UserId("USR1")},
+      {min: 500.0, max: 1000.0, userId: UserId("USR2")},
+      {min: 1000.0, max: 5000.0, userId: UserId("USR3")},
+      {min: 5.000, max: infinity, userId: UserId("USR4")},
+    |],
+  },
+|];
+
 let teams: array(team) = [|
   {
     id: TeamId("TEAM1"),
@@ -122,21 +134,35 @@ describe("As an Admin", () => {
          );
     });
 
-    testPromise("shows the first 3 members of a team", () => {
+    test("shows the first 3 members of a team", () => {
       <TeamList.TeamList teams users />
       |> render(_)
-      |> findAllByTestId(~matcher=`Str("team-list-item"), _)
-      |> Js.Promise.then_(elements =>
-           elements
-           |> Array.get(_, 0)
-           |> expect
-           |> toHaveTextContent(
-                `Str(
-                  "MarketingMembersRalph RomeroTiffany FrazierSandra ReedApprovers",
-                ),
-                _,
-              )
-           |> Js.Promise.resolve
+      |> getAllByTestId(~matcher=`Str("team-list-item"), _)
+      |> Array.get(_, 0)
+      |> expect
+      |> toHaveTextContent(
+           `RegExp(
+             [%re
+               "/^MarketingMembersRalph RomeroTiffany FrazierSandra ReedApproversEdit$/"
+             ],
+           ),
+           _,
+         )
+    });
+
+    test("shows the first 3 approvers of a team", () => {
+      <TeamList.TeamList teams users approvalFlows />
+      |> render(_)
+      |> getAllByTestId(~matcher=`Str("team-list-item"), _)
+      |> Array.get(_, 0)
+      |> expect
+      |> toHaveTextContent(
+           `RegExp(
+             [%re
+               "/^MarketingMembersRalph RomeroTiffany FrazierSandra ReedApproversEugene TranRalph RomeroTiffany FrazierEdit$/"
+             ],
+           ),
+           _,
          )
     });
   })
