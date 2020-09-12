@@ -28,7 +28,9 @@
     "bs-jest-dom": "^4.1.1",
     "bs-platform": "8.2.0",
     "bs-react-testing-library": "^0.7.3",
+    "isomorphic-fetch": "^2.2.1",
     "jest": "^26.4.2",
+    "msw": "^0.21.2",
     "parcel-bundler": "^1.12.4",
     "tailwindcss": "^1.8.8"
   }

@@ -13,7 +13,7 @@ let useTeams = () => {
 
   let apiOptions = React.useContext(ApiContext.context);
 
-  let fetcher = url =>
+  let fetcher = () =>
     Fetch.fetch(apiOptions.baseUrl ++ path)
     |> Js.Promise.then_(Fetch.Response.json);
 
