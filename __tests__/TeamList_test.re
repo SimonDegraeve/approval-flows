@@ -51,12 +51,22 @@ let users: array(user) = [|
   },
 |];
 
-let teams: array(teamWithUsers) = [|
-  {id: TeamId("TEAM1"), name: "Marketing", users: [|users[0], users[2]|]},
+let teams: array(team) = [|
+  {
+    id: TeamId("TEAM1"),
+    name: "Marketing",
+    userIds: [|
+      UserId("USR2"),
+      UserId("USR3"),
+      UserId("USR4"),
+      UserId("USR5"),
+      UserId("USR6"),
+    |],
+  },
   {
     id: TeamId("TEAM2"),
     name: "Product & Engineering",
-    users: [|users[1], users[3], users[4], users[5]|],
+    userIds: [|UserId("USR1"), UserId("USR3")|],
   },
 |];
 
@@ -79,7 +89,7 @@ afterAll(() => server##close());
 describe("As an Admin", () => {
   describe("shows the list of the teams", () => {
     test("shows the component", () => {
-      <TeamApprovalFlows.TeamList teams />
+      <TeamList.TeamList teams />
       |> render(_)
       |> getAllByRole(~matcher=`Str("heading"), _)
       |> Array.get(_, 0)
@@ -87,19 +97,10 @@ describe("As an Admin", () => {
       |> toHaveTextContent(`Str("Teams approval flows"), _)
     });
 
-    test("shows a list of X elements", () => {
-      <TeamApprovalFlows.TeamList teams />
-      |> render(_)
-      |> getAllByRole(~matcher=`Str("listitem"), _)
-      |> Array.length(_)
-      |> Expect.expect
-      |> Expect.toBe(7)
-    });
-
     test("shows the name of a team", () => {
-      <TeamApprovalFlows.TeamList teams />
+      <TeamList.TeamList teams />
       |> render(_)
-      |> getAllByRole(~matcher=`Str("listitem"), _)
+      |> getAllByTestId(~matcher=`Str("team-list-item"), _)
       |> Array.get(_, 0)
       |> expect
       |> toHaveTextContent(`Str("Marketing"), _)
@@ -108,10 +109,10 @@ describe("As an Admin", () => {
     testPromise("fetches teams from api", () => {
       let apiOptions: ApiContext.options = {baseUrl: "http://localhost:1234"};
       <ApiContext.Provider value=apiOptions>
-        <TeamApprovalFlows />
+        <TeamList />
       </ApiContext.Provider>
       |> render(_)
-      |> findAllByRole(~matcher=`Str("listitem"), _)
+      |> findAllByTestId(~matcher=`Str("team-list-item"), _)
       |> Js.Promise.then_(elements =>
            elements
            |> Array.get(_, 0)
@@ -121,15 +122,22 @@ describe("As an Admin", () => {
          );
     });
 
-    describe("shows the first 3 members of a team", () => {
-      test("shows the name of a team", () => {
-        <TeamApprovalFlows.TeamList teams />
-        |> render(_)
-        |> getAllByRole(~matcher=`Str("list"), _)
-        |> Array.get(_, 2)
-        |> expect
-        |> toHaveTextContent(`Str("Ralph RomeroSandra ReedJason Casey"), _)
-      })
+    testPromise("shows the first 3 members of a team", () => {
+      <TeamList.TeamList teams users />
+      |> render(_)
+      |> findAllByTestId(~matcher=`Str("team-list-item"), _)
+      |> Js.Promise.then_(elements =>
+           elements
+           |> Array.get(_, 0)
+           |> expect
+           |> toHaveTextContent(
+                `Str(
+                  "MarketingMembersRalph RomeroTiffany FrazierSandra ReedApprovers",
+                ),
+                _,
+              )
+           |> Js.Promise.resolve
+         )
     });
   })
 });

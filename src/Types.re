@@ -25,19 +25,13 @@ type user = {
   email: string,
 };
 
-type teamWithUsers = {
-  id: teamId,
-  name: string,
-  users: array(user),
-};
-
 type threshold = {
   min: float,
   max: float,
   userId: array(userId),
 };
 
-type approvalScheme = {
+type approvalFlow = {
   teamId,
   thresholds: array(threshold),
 };

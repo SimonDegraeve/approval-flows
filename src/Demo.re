@@ -5,13 +5,7 @@ module App = {
       baseUrl: "https://s3-eu-west-1.amazonaws.com/",
     };
 
-    <div className="h-screen flex justify-center items-center">
-      <div className="max-w-4xl w-full rounded overflow-hidden shadow-lg p-4">
-        <ApiContext.Provider value=apiOptions>
-          <TeamApprovalFlows />
-        </ApiContext.Provider>
-      </div>
-    </div>;
+    <ApiContext.Provider value=apiOptions> <TeamList /> </ApiContext.Provider>;
   };
 };
 
